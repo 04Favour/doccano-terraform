@@ -209,3 +209,6 @@ frontend/assets/fonts
 #Terraform
 terraform/.terraform
 terraform/.terraform.lock.hcl
+
+#Doccano
+doccano-key.pem

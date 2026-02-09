@@ -18,7 +18,18 @@ resource "aws_instance" "doccano_server" {
   ami = data.aws_ami.ubuntu.id
   instance_type = "t2.micro"
   subnet_id = aws_subnet.public_subnet.id
+  key_name = aws_key_pair.generated_key.key_name
   vpc_security_group_ids = [aws_security_group.doccano_sg.id]
 
   tags = {Name = "doccano-app-server"}
+}
+
+resource "aws_key_pair" "generated_key" {
+  key_name = "doccano-key"
+  public_key = tls_private_key.rsa_key.public_key_openssh
+}
+
+resource "tls_private_key" "rsa_key" {
+  algorithm = "RSA"
+  rsa_bits = 4096
 }

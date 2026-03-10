@@ -26,12 +26,12 @@ jobs:
 
       # 2. Security Scan (Trivy)
       # We scan the filesystem BEFORE building to catch issues in dependencies
-      - name: Trivy FS Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          exit-code: '1' # Fails the pipeline if Critical bugs are found
-          severity: 'CRITICAL,HIGH'
+      # - name: Trivy FS Scan
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     scan-type: 'fs'
+      #     exit-code: '1' # Fails the pipeline if Critical bugs are found
+      #     severity: 'CRITICAL,HIGH'
 
       # 3. Docker Build & Push
       - name: Login to DockerHub

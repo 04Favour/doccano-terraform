@@ -1,0 +1,53 @@
+name: Doccano World-Class CI/CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  pipeline:
+    # This ensures the job runs on your EC2 Build Server
+    runs-on: self-hosted 
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for full SonarQube analysis
+
+      # 1. SonarQube Analysis (Local Lab)
+      # Since Sonar is in its own folder/container on this same server, 
+      # the runner talks to 'localhost'
+      # - name: SonarQube Scan
+      #   uses: sonarsource/sonarqube-scan-action@master
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      #     SONAR_HOST_URL: "http://localhost:9000"
+
+      # 2. Security Scan (Trivy)
+      # We scan the filesystem BEFORE building to catch issues in dependencies
+      - name: Trivy FS Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          exit-code: '1' # Fails the pipeline if Critical bugs are found
+          severity: 'CRITICAL,HIGH'
+
+      # 3. Docker Build & Push
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and Push Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/doccano:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/doccano:latest
+
+      # 4. Local Deployment
+      # Since the Runner is on the same server, we just jump into the 
+      # project folder and restart the containers.
+      - name: Deploy to Production
+        run: |
+          cd ~/doccano-terraform
+          docker-compose pull
+          docker-compose up -d
+          docker image prune -f # Cleanup old layers to save space

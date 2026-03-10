@@ -48,5 +48,5 @@ jobs:
       - name: Deploy to Production
         run: |
           docker-compose pull
-          docker-compose up -d
-          docker image prune -f # Cleanup old layers to save space
+          docker-compose -f docker-compose.prod.yml --env-file .env up -d
+          docker image prune -f 

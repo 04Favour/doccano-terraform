@@ -39,7 +39,8 @@ jobs:
 
       - name: Build and Push Image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{github.sha}} ./docker/Dockerfile
+          cd $GITHUB_WORKSPACE
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{github.sha}} ./docker
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{github.sha}}
 
       # 4. Local Deployment

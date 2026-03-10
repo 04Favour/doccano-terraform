@@ -39,7 +39,6 @@ jobs:
 
       - name: Build and Push Image
         run: |
-          cd doccano-terraform
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{github.sha}} ./docker
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{github.sha}}
 

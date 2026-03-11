@@ -6,7 +6,6 @@ on:
 
 jobs:
   pipeline:
-    # This ensures the job runs on your EC2 Build Server
     runs-on: self-hosted 
 
     steps:
@@ -46,10 +45,8 @@ jobs:
 
 
       # 4. Local Deployment
-      # Since the Runner is on the same server, we just jump into the 
-      # project folder and restart the containers.
       - name: Deploy to Production
         run: |
           docker-compose pull
           docker-compose -f docker-compose.prod.yml --env-file .env up -d
-          docker image prune -f 
+          docker image prune -af 

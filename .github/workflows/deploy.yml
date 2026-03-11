@@ -5,48 +5,60 @@ on:
     branches: [ main ]
 
 jobs:
-  pipeline:
-    runs-on: ubuntu-latest 
+  # 1. ANALYZE & SCAN (Currently commented out)
+  # quality-gate:
+  #   runs-on: self-hosted
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #     - name: SonarQube Scan
+  #       uses: sonarsource/sonarqube-scan-action@master
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #         SONAR_HOST_URL: "http://localhost:9000"
+  #     - name: Trivy FS Scan
+  #       uses: aquasecurity/trivy-action@master
+  #       with:
+  #         scan-type: 'fs'
+  #         exit-code: '1'
+  #         severity: 'CRITICAL,HIGH'
 
+  # 2. BUILD & PUSH IMAGE
+  build-and-push:
+    # needs: [quality-gate] # Uncomment this once the first job is active
+    runs-on: self-hosted
+    outputs:
+      image_tag: ${{ github.sha }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Required for full SonarQube analysis
 
-      # 1. SonarQube Analysis (Local Lab)
-      # Since Sonar is in its own folder/container on this same server, 
-      # the runner talks to 'localhost'
-      # - name: SonarQube Scan
-      #   uses: sonarsource/sonarqube-scan-action@master
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      #     SONAR_HOST_URL: "http://localhost:9000"
-
-      # 2. Security Scan (Trivy)
-      # We scan the filesystem BEFORE building to catch issues in dependencies
-      # - name: Trivy FS Scan
-      #   uses: aquasecurity/trivy-action@master
-      #   with:
-      #     scan-type: 'fs'
-      #     exit-code: '1' # Fails the pipeline if Critical bugs are found
-      #     severity: 'CRITICAL,HIGH'
-
-      # 3. Docker Build & Push
       - name: Login to DockerHub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build and Push
         uses: docker/build-push-action@v5
         with: 
-          context: -f docker/Dockerfile .
+          context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/doccano:${{github.sha}}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/doccano:${{ github.sha }}, ${{ secrets.DOCKERHUB_USERNAME }}/doccano:latest
 
+  # 3. DEPLOY TO PRODUCTION
+  deploy:
+    needs: [build-and-push]
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      # 4. Local Deployment
       - name: Deploy to Production
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
+          # Ensure env variables are available for the compose file
           docker-compose pull
           docker-compose -f docker-compose.prod.yml --env-file .env up -d
-          docker image prune -f 
+          docker image prune -f

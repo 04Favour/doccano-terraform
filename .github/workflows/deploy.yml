@@ -1,36 +1,12 @@
-name: Doccano World-Class CI/CD
+name: Doccano Production CI/CD
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  # 1. ANALYZE & SCAN (Currently commented out)
-  # quality-gate:
-  #   runs-on: self-hosted
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #     - name: SonarQube Scan
-  #       uses: sonarsource/sonarqube-scan-action@master
-  #       env:
-  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  #         SONAR_HOST_URL: "http://localhost:9000"
-  #     - name: Trivy FS Scan
-  #       uses: aquasecurity/trivy-action@master
-  #       with:
-  #         scan-type: 'fs'
-  #         exit-code: '1'
-  #         severity: 'CRITICAL,HIGH'
-
-  # 2. BUILD & PUSH IMAGE
   build-and-push:
-    # needs: [quality-gate] # Uncomment this once the first job is active
-    runs-on: self-hosted
-    outputs:
-      image_tag: ${{ github.sha }}
+    runs-on: ubuntu-latest 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -46,26 +22,23 @@ jobs:
 
       - name: Build and Push
         uses: docker/build-push-action@v5
-        with: 
+        with:
           context: .
-          file: ./docker/Dockerfile 
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/doccano:${{ github.sha }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/doccano:latest
-  # 3. DEPLOY TO PRODUCTION
-  deploy:
-    needs: [build-and-push]
-    runs-on: self-hosted
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/doccano:${{github.sha}}
 
-      - name: Deploy to Production
-        env:
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          # Ensure env variables are available for the compose file
-          docker-compose pull
-          docker-compose -f docker-compose.prod.yml --env-file .env up -d
-          docker image prune -f
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/doccano
+            docker compose pull
+            docker compose up -d
+            docker image prune -f

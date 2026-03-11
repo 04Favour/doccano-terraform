@@ -37,10 +37,13 @@ jobs:
       - name: Login to DockerHub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Build and Push Image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{github.sha}} -f docker/Dockerfile .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{github.sha}}
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with: 
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/doccano:${{github.sha}}
+
 
       # 4. Local Deployment
       # Since the Runner is on the same server, we just jump into the 

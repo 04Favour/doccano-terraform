@@ -39,7 +39,7 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v5
         with: 
-          context: .
+          context: -f docker/Dockerfile .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/doccano:${{github.sha}}
 

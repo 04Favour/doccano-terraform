@@ -26,6 +26,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
   build-and-push:
+    needs: analysis
     runs-on: ubuntu-latest 
     steps:
       - name: Checkout Code
@@ -47,6 +48,8 @@ jobs:
           file: ./docker/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/doccano:${{github.sha}}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     needs: build-and-push

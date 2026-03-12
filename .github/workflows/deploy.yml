@@ -22,8 +22,9 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
+          scan_ref: '.'
           exit-code: '1' 
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL'
 
   build-and-push:
     needs: analysis

@@ -26,7 +26,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/doccan0o:${{github.sha}}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/doccano:${{github.sha}}
 
   deploy:
     needs: build-and-push
